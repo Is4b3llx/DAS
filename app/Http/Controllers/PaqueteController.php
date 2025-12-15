@@ -28,7 +28,7 @@ use App\Models\TipoLicencia;
 use App\Models\Marca;
 use App\Models\TipoVehiculo;
 use Illuminate\Support\Facades\Cache;
-use App\Mail\codigoEntregaPaquete;
+use App\Mail\CodigoEntregaPaquete;
 use App\Exports\PaqueteSeguimientoExport;
 use Maatwebsite\Excel\Facades\Excel;
 
