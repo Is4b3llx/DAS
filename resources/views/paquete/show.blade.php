@@ -370,6 +370,17 @@
 
                             <div class="footer">Documento generado desde el sistema DAS.</div>
                         </div>
+                @php
+                    $destinoModel = optional(optional($paquete->solicitud)->destino);
+                    $destLatRaw   = $destinoModel->latitud;
+                    $destLngRaw   = $destinoModel->longitud;
+
+                    $destLat = $destLatRaw !== null ? str_replace(',', '.', $destLatRaw) : null;
+                    $destLng = $destLngRaw !== null ? str_replace(',', '.', $destLngRaw) : null;
+
+                    $hasDestinoCoords = is_numeric($destLat) && is_numeric($destLng);
+                @endphp
+
                         <div class="form-group mb-2 mb20">
                             <strong>Código de Solicitud:</strong>
                             {{ $paquete->solicitud->codigo_seguimiento ?? '—' }}
@@ -464,6 +475,7 @@
                             <strong>Ubicacion Actual:</strong>
                             {{ $paquete->ubicacion_actual ?? 'La ubicación se ingresa cuando inicia la ruta'}}
                         </div>
+
                        @if($lat !== null && $lng !== null)
                             <div class="form-group mb-2 mb20">
                                 <strong>Ubicación Actual del Paquete:</strong>
@@ -474,6 +486,18 @@
                                 </div>
                             </div>
                         @endif
+                        @if($hasDestinoCoords)
+                            <div class="form-group mb-2 mb20">
+                                <strong>Destino en Google Maps:</strong>
+                                <a href="https://www.google.com/maps?q={{ $destLat }},{{ $destLng }}"
+                                target="_blank"
+                                class="btn btn-warning btn-sm ml-2">
+                                    Ver Destino
+                                </a>
+                                
+                            </div>
+                        @endif
+
                     </div>
                 </div>
             </div>
