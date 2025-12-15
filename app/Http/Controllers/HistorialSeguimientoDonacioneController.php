@@ -156,6 +156,10 @@ class HistorialSeguimientoDonacioneController extends Controller
 
     public function tracking($id_paquete)
     {
+        $ALMACEN_LAT  = -17.722196014285355;
+        $ALMACEN_LNG  = -63.17460540787094;
+        $ALMACEN_ZONA = 'Almacen de Donaciones - Campus Univalle';
+
         $paquete = Paquete::with([
             'solicitud.solicitante',
             'solicitud.destino',
@@ -169,16 +173,35 @@ class HistorialSeguimientoDonacioneController extends Controller
             ->orderBy('fecha_actualizacion', 'asc')
             ->get();
 
+        $norm = function ($v) {
+            if ($v === null || $v === '') return null;
+            $v = str_replace(',', '.', (string)$v);
+            return is_numeric($v) ? (float)$v : null;
+        };
+
         $points = [];
 
         if ($historial->count() > 0) {
             foreach ($historial as $h) {
-                if ($h->ubicacion) {
+                $estado = strtolower(trim((string) ($h->estado ?? '')));
+
+                $lat  = $h->ubicacion ? $norm($h->ubicacion->latitud) : null;
+                $lng  = $h->ubicacion ? $norm($h->ubicacion->longitud) : null;
+                $zona = $h->ubicacion ? ($h->ubicacion->zona ?? null) : null;
+
+                if ($estado === 'armado' && (!$lat || !$lng)) {
+                    $lat  = $ALMACEN_LAT;
+                    $lng  = $ALMACEN_LNG;
+                    $zona = $ALMACEN_ZONA;
+                }
+
+                if ($lat !== null && $lng !== null) {
                     $points[] = [
-                        'lat' => (float)$h->ubicacion->latitud,
-                        'lng' => (float)$h->ubicacion->longitud,
-                        'zona' => $h->ubicacion->zona,
+                        'lat'   => $lat,
+                        'lng'   => $lng,
+                        'zona'  => $zona ?? '',
                         'fecha' => $h->fecha_actualizacion,
+                        'estado'=> $h->estado,
                     ];
                 }
             }
@@ -187,9 +210,9 @@ class HistorialSeguimientoDonacioneController extends Controller
                 preg_match('/\(([-0-9.]+),\s*([-0-9.]+)\)/', $paquete->ubicacion_actual, $m);
                 if (count($m) == 3) {
                     $points[] = [
-                        'lat' => (float)$m[1],
-                        'lng' => (float)$m[2],
-                        'zona' => $paquete->zona ?? '',
+                        'lat'   => (float)$m[1],
+                        'lng'   => (float)$m[2],
+                        'zona'  => $paquete->zona ?? '',
                         'fecha' => $paquete->fecha_aprobacion ?? '',
                     ];
                 }
