@@ -26,6 +26,7 @@ services:
       GATEWAY_API_URL: http://gatealas.dasalas.shop/ 
       GATEWAY_REGISTRO_SIMPLE_URL: http://gatealas.dasalas.shop/api/gateway/registro/ci
       HELPDESK_API_URL: https://proyecto-de-ultimo-minuto.online
+      QUEUE_CONNECTION: sync
       APP_NAME: 'Logistica y Transporte'
     depends_on:
       - db

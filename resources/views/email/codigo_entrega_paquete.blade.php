@@ -14,7 +14,7 @@
                 @endphp
                 <h2 style="margin:0;font-size:20px;font-weight:700;">
                     Código de validación para entrega de tu paquete {{ $codigoSeguimiento }}
-                </h2>
+                </h2> 
             </div>
 
             <div style="padding:24px 28px 10px;">
