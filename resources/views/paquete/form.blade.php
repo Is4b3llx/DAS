@@ -97,6 +97,38 @@
             </a>
           </small>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const vehiculoSelect = document.getElementById('id_vehiculo');
+          const conductorSelect = document.getElementById('id_conductor');
+          if (!vehiculoSelect || !conductorSelect) return;
+
+          // Mapeo de vehiculo_id => conductor_id para paquetes "En camino"
+          const vehiculoConductorEnCamino = @json(\App\Models\Paquete::whereHas('estado', function($q){ $q->whereRaw('LOWER(nombre_estado) = ?', ['en camino']); })
+            ->whereNotNull('id_vehiculo')
+            ->whereNotNull('id_conductor')
+            ->get()
+            ->mapWithKeys(function($p){ return [$p->id_vehiculo => $p->id_conductor]; })
+          );
+
+          vehiculoSelect.addEventListener('change', function() {
+            const selectedVehiculo = this.value;
+            if (vehiculoConductorEnCamino[selectedVehiculo]) {
+              conductorSelect.value = vehiculoConductorEnCamino[selectedVehiculo];
+              conductorSelect.setAttribute('readonly', 'readonly');
+            } else {
+              conductorSelect.value = '';
+              conductorSelect.removeAttribute('readonly');
+            }
+          });
+
+          // Al cargar, si el vehículo ya tiene conductor en camino, bloquear selección
+          if (vehiculoSelect.value && vehiculoConductorEnCamino[vehiculoSelect.value]) {
+            conductorSelect.value = vehiculoConductorEnCamino[vehiculoSelect.value];
+            conductorSelect.setAttribute('readonly', 'readonly');
+          }
+        });
+        </script>
 
         <div class="form-group mb-2 mb20">
           <label for="id_vehiculo" class="form-label">Vehículo asignado</label>
