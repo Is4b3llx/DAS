@@ -472,6 +472,21 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
 
 document.addEventListener('DOMContentLoaded', function() {
     $('#dashboardFiltersModal').on('shown.bs.modal', function() {
+        const filterSelect = document.getElementById('filter-solicitudes');
+        if (filterSelect) {
+            // Genera y asigna el reporte actual al abrir el modal
+            const type = filterSelect.value;
+            let items = [];
+            if (type === 'comunidad') {
+                items = solicitudesData.comunidad || [];
+            } else if (type === 'aceptadas') {
+                items = solicitudesData.aceptadas || [];
+            } else if (type === 'negadas') {
+                items = solicitudesData.negadas || [];
+            }
+            const htmlContent = '';
+            currentSolicitudesReport = buildReportObject('Solicitudes', type, items.length, htmlContent, { items });
+        }
         const toggleListBtn = document.getElementById('btn-toggle-list');
         const resultList = document.getElementById('filter-solicitudes-result');
         if (toggleListBtn && resultList) {
@@ -488,9 +503,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const generateSolicitudesBtn = document.getElementById('btn-generar-reporte');
         if (generateSolicitudesBtn) {
-            generateSolicitudesBtn.onclick = function() {
+            generateSolicitudesBtn.addEventListener('click', function() {
+                const filterSelect = document.getElementById('filter-solicitudes');
+                let htmlContent = '';
+                let items = [];
+                let type = '';
+                if (filterSelect) {
+                    type = filterSelect.value;
+                    if (type === 'comunidad') {
+                        items = solicitudesData.comunidad || [];
+                        htmlContent = buildComunidadPdfCards(items);
+                    } else if (type === 'aceptadas' || type === 'negadas') {
+                        items = solicitudesData[type] || [];
+                        htmlContent = buildSolicitudPdfCards(items);
+                    }
+                    currentSolicitudesReport = buildReportObject('Solicitudes', type, items.length, htmlContent, { items });
+                }
                 exportCurrentReport(currentSolicitudesReport, 'Solicitudes');
-            };
+            });
         }
         const excelSolicitudesBtn = document.getElementById('btn-excel-solicitudes');
         if (excelSolicitudesBtn) {
@@ -910,7 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const wrapper = document.createElement('div');
         wrapper.innerHTML = buildFormalPdfLayout(report, `<ul style="list-style:none;padding:0;margin:0;">${listMarkup}</ul>`, prettyDate);
-        //const hasCustomLayout = (report.group === 'Solicitudes') || (report.group === 'Paquetes' && ['entregadas','en_camino'].includes(report.type));
+        const hasCustomLayout = (report.group === 'Solicitudes') || (report.group === 'Paquetes' && ['entregadas','en_camino'].includes(report.type));
         const shouldStyleItems = !hasCustomLayout;
         if (shouldStyleItems) {
             wrapper.querySelectorAll('li').forEach(li => {
@@ -1709,11 +1739,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (generateSolicitudesBtn) {
-        generateSolicitudesBtn.addEventListener('click', function() {
-            exportCurrentReport(currentSolicitudesReport, 'Solicitudes');
-        });
-    }
+    // Eliminado: doble manejador para evitar conflicto y bug visual
 
     if (generatePaquetesBtn) {
         generatePaquetesBtn.addEventListener('click', function() {
