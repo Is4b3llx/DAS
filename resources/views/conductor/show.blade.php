@@ -34,7 +34,7 @@
                                 </div>
                                 <div class="form-group mb-2 mb20">
                                     <strong>Fecha Nacimiento:</strong>
-                                    {{ $conductor->fecha_nacimiento }}
+                                    {{ $conductor->fecha_nacimiento ? \Carbon\Carbon::parse($conductor->fecha_nacimiento)->format('d/m/Y') : '' }}
                                 </div>
                                 <div class="form-group mb-2 mb20">
                                     <strong>Ci:</strong>

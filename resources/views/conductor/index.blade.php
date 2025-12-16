@@ -78,7 +78,7 @@
                                         <td>{{ $conductor->conductor_id }}</td>
                                         <td>{{ $conductor->nombre }}</td>
                                         <td>{{ $conductor->apellido }}</td>
-                                        <td>{{ $conductor->fecha_nacimiento }}</td>
+                                        <td>{{ $conductor->fecha_nacimiento ? \Carbon\Carbon::parse($conductor->fecha_nacimiento)->format('d/m/Y') : '' }}</td>
                                         <td>{{ $conductor->ci }}</td>
                                         <td>{{ $conductor->celular }}</td>
                                         <td>{{ $conductor->tipoLicencium?->licencia??'Sin Tipo' }}</td>
