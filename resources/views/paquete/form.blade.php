@@ -12,6 +12,48 @@
     $paqueteEnEdicion = isset($paquete) && $paquete->exists;
 @endphp
 
+@php
+    // === ALMACÉN fallback (exact values you requested) ===
+    $ALMACEN_LAT = -17.722196014285355;
+    $ALMACEN_LNG = -63.17460540787094;
+
+    // Values from old() first (validation redirect), else from model
+    $latValue  = old('latitud',  $paquete->latitud  ?? null);
+    $lngValue  = old('longitud', $paquete->longitud ?? null);
+    $zonaValue = old('zona',     $paquete->zona     ?? null);
+
+    if ((!is_numeric($latValue) || !is_numeric($lngValue)) && !empty($paquete->ubicacion_actual)) {
+        if (preg_match('/\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?/', $paquete->ubicacion_actual, $m)) {
+            $latValue = $m[1];
+            $lngValue = $m[2];
+        }
+    }
+
+    $estadoSeleccionadoId = old('estado_id', $paquete->estado_id ?? null);
+    $estadoSeleccionadoNombre = $estadoSeleccionadoId
+        ? ($estados[$estadoSeleccionadoId] ?? '')
+        : (optional($paquete->estado)->nombre_estado ?? '');
+
+    $esArmado = strcasecmp(trim($estadoSeleccionadoNombre), 'Armado') === 0;
+
+    $coordsMissing = !(is_numeric($latValue) && is_numeric($lngValue));
+    $zonaMissing   = empty($zonaValue);
+
+    if ($esArmado && ($coordsMissing || $zonaMissing)) {
+        $defaultLat  = $ALMACEN_LAT;
+        $defaultLng  = $ALMACEN_LNG;
+        $defaultZoom = 14;
+        $zonaValue   = 'Almacen de Donaciones';
+    } else {
+        $defaultLat  = is_numeric($latValue) ? (float)$latValue : $ALMACEN_LAT;
+        $defaultLng  = is_numeric($lngValue) ? (float)$lngValue : $ALMACEN_LNG;
+
+        $hasCoords   = is_numeric($latValue) && is_numeric($lngValue);
+        $defaultZoom = $hasCoords ? 13 : 6;
+    }
+@endphp
+
+
 <div class="row padding-1 p-1">
   <div class="col-md-12">
 
@@ -249,10 +291,6 @@
               <label for="mapa-ubicacion-paquete">Seleccione la Ubicación en el Mapa</label>
               <div id="mapa-ubicacion-paquete" style="height: 400px; width: 100%; border: 1px solid #ddd; border-radius: 4px;"></div>
               <p class="form-text text-muted">Su ubicación se detecta automáticamente, no es posible editar este punto por seguridad.</p>
-              <p class="form-text text-muted">
-                <strong>Demostración con mapa liberado:</strong> puede seleccionar libremente la ubicación sobre el mapa.
-              </p>
-
               {!! $errors->first('latitud', '<div class="invalid-feedback d-block"><strong>:message</strong></div>') !!}
               {!! $errors->first('longitud', '<div class="invalid-feedback d-block"><strong>:message</strong></div>') !!}
             </div>
@@ -265,7 +303,7 @@
               <label for="zona" class="form-label">Dirección / Zona (detectada automáticamente)</label>
               <input type="text" name="zona" id="zona"
                     class="form-control @error('zona') is-invalid @enderror"
-                    value="{{ old('zona', $paquete->zona) }}"
+                    value="{{ $zonaValue }}"
                     placeholder="Se completará automáticamente desde su ubicación"
                     readonly>
               {!! $errors->first('zona', '<div class="invalid-feedback"><strong>:message</strong></div>') !!}
@@ -286,7 +324,7 @@
               <label for="latitud" class="form-label">Latitud</label>
               <input type="number" step="any" name="latitud" id="latitud" readonly
                     class="form-control @error('latitud') is-invalid @enderror"
-                    value="{{ old('latitud') }}"
+                    value="{{ old('latitud', $defaultLat) }}"
                     placeholder="-17.7833">
               {!! $errors->first('latitud', '<div class="invalid-feedback"><strong>:message</strong></div>') !!}
             </div>
@@ -297,7 +335,7 @@
               <label for="longitud" class="form-label">Longitud</label>
               <input type="number" step="any" name="longitud" id="longitud" readonly
                     class="form-control @error('longitud') is-invalid @enderror"
-                    value="{{ old('longitud') }}"
+                    value="{{ old('longitud', $defaultLng) }}"
                     placeholder="-63.1821">
               {!! $errors->first('longitud', '<div class="invalid-feedback"><strong>:message</strong></div>') !!}
             </div>
@@ -349,10 +387,29 @@
         }
     }
 
-    $defaultLat = (is_numeric($latValue) && $latValue) ? (float) $latValue : -17.722213878615346;
-    $defaultLng = (is_numeric($lngValue) && $lngValue) ? (float) $lngValue : -63.17462682731379;
-    $hasCoords  = (is_numeric($latValue) && $latValue && is_numeric($lngValue) && $lngValue);
-    $defaultZoom = $hasCoords ? 13 : 6;
+    $estadoSeleccionadoId = old('estado_id', $paquete->estado_id ?? null);
+    $estadoSeleccionadoNombre = $estadoSeleccionadoId ? ($estados[$estadoSeleccionadoId] ?? '') : '';
+    $esArmado = strcasecmp($estadoSeleccionadoNombre, 'Armado') === 0;
+
+    $ALMACEN_LAT = -17.722196014285355;
+    $ALMACEN_LNG = -63.17460540787094;
+
+    $zonaValue = old('zona', $paquete->zona ?? null);
+
+    $coordsMissing = !(is_numeric($latValue) && is_numeric($lngValue));
+    $zonaMissing   = empty($zonaValue);
+
+    if ($esArmado && ($coordsMissing || $zonaMissing)) {
+        $defaultLat = $ALMACEN_LAT;
+        $defaultLng = $ALMACEN_LNG;
+        $defaultZoom = 14;
+        $zonaValue = 'Almacen de Donaciones';
+    } else {
+        $defaultLat = (is_numeric($latValue) && $latValue) ? (float) $latValue : $ALMACEN_LAT;
+        $defaultLng = (is_numeric($lngValue) && $lngValue) ? (float) $lngValue : $ALMACEN_LNG;
+        $hasCoords  = (is_numeric($latValue) && $latValue && is_numeric($lngValue) && $lngValue);
+        $defaultZoom = $hasCoords ? 13 : 6;
+    }
 @endphp
 
 
@@ -378,11 +435,13 @@
 
     const map = L.map('mapa-ubicacion-paquete', {
       zoomControl: true,
-      //dragging: false, 
-      //scrollWheelZoom: false,
-      //doubleClickZoom: false,
-      //boxZoom: false,
-      //touchZoom: false,
+      dragging: false, 
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      touchZoom: false,
+      keyboard: false,
+      tap: false,
     }).setView([defaultLat, defaultLng], defaultZoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -396,6 +455,13 @@
     const lngInput = document.getElementById('longitud');
     const direccionInput = document.getElementById('zona');
     const provinciaInput = document.getElementById('provincia_actual');
+    const estadoSelect = document.getElementById('estado_id');
+
+    function isArmadoSelected() {
+      if (!estadoSelect) return false;
+      const txt = (estadoSelect.options[estadoSelect.selectedIndex]?.text || '').trim();
+      return txt.toLowerCase() === 'armado';
+    }
 
     function setMarker(lat, lng) {
       if (latInput && lngInput) {
@@ -454,41 +520,33 @@
         });
     }
 
-    if (latInput && lngInput && latInput.value && lngInput.value) {
-      const lat = parseFloat(latInput.value);
-      const lng = parseFloat(lngInput.value);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setMarker(lat, lng);
-      }
+    if (isArmadoSelected()) {
+      setMarker(FALLBACK_LAT, FALLBACK_LNG);
+      if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
+      if (provinciaInput) provinciaInput.value = '';
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function(position) {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          setMarker(lat, lng);
+          setMarker(position.coords.latitude, position.coords.longitude);
         },
         function(error) {
           console.warn("Error o permiso denegado en geolocalización:", error);
           setMarker(FALLBACK_LAT, FALLBACK_LNG);
 
+          if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
+
           const geoAlert = document.getElementById("geo-alert");
           if (geoAlert) {
             geoAlert.classList.remove("d-none");
-            geoAlert.innerHTML = `
-              Se usó una ubicación de referencia para registrar la posición del paquete.
-            `;
+            geoAlert.innerHTML = `Se usó una ubicación de referencia para registrar la posición del paquete.`;
           }
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
     } else {
       setMarker(FALLBACK_LAT, FALLBACK_LNG);
+      if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
     }
-
-    map.on("click", function(e) {
-      setMarker(e.latlng.lat, e.latlng.lng);
-    });
-
   }
 
   if (document.readyState === "loading") {
