@@ -103,7 +103,7 @@
           const conductorSelect = document.getElementById('id_conductor');
           if (!vehiculoSelect || !conductorSelect) return;
 
-          // Mapeo de vehiculo_id => conductor_id para paquetes "En camino"
+          
           const vehiculoConductorEnCamino = @json(\App\Models\Paquete::whereHas('estado', function($q){ $q->whereRaw('LOWER(nombre_estado) = ?', ['en camino']); })
             ->whereNotNull('id_vehiculo')
             ->whereNotNull('id_conductor')

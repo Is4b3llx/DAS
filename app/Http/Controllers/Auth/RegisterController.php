@@ -72,7 +72,7 @@ class RegisterController extends Controller
             'ci'                 => $data['ci'],
             'password'           => Hash::make($data['password']),
             'id_rol'             => $data['id_rol'] ?? null,
-            'activo'             => true,
+            'activo'             => false,
             'administrador'      => false,
         ]);
     }
