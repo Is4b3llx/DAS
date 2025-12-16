@@ -445,4 +445,44 @@ class TrazabilidadController extends Controller
         ]);
     }
 
+    public function exponerUsuarios()
+    {
+        $cisVoluntarios = Solicitud::query()
+            ->whereNotNull('ci_voluntario')
+            ->pluck('ci_voluntario')
+            ->map(fn($v) => trim((string)$v))
+            ->filter()
+            ->toArray();
+
+        // $cisSolicitantes = Solicitante::query()
+            // ->whereNotNull('ci')
+           // ->pluck('ci')
+           // ->map(fn($v) => trim((string)$v))
+           // ->filter()
+           // ->toArray();
+
+        $cisConductores = HistorialSeguimientoDonacione::query()
+            ->whereNotNull('conductor_ci')
+            ->pluck('conductor_ci')
+            ->map(fn($v) => trim((string)$v))
+            ->filter()
+            ->toArray();
+
+        $lista = [];
+        $seen = [];
+
+        foreach (array_merge($cisVoluntarios, $cisConductores) as $ci) {
+            if (!isset($seen[$ci])) {
+                $seen[$ci] = true;
+                $lista[] = $ci;
+            }
+        }
+
+        return response()->json([
+            'success'  => true,
+            'total'    => count($lista),
+            'lista_ci' => $lista,
+        ]);
+    }
+
 }

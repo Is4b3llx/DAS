@@ -44,6 +44,7 @@ Route::prefix('trazabilidad')->group(function () {
     Route::get('/solicitudes/codigos', [TrazabilidadController::class, 'codigosSolicitudes']);
     Route::get('/vehiculos/placas', [TrazabilidadController::class, 'placasVehiculos']);
 });
+Route::get('/users/ci', [TrazabilidadController::class, 'exponerUsuarios']);
 
 Route::get('/paquetes/destino-voluntario/{codigo}', [PaqueteController::class, 'showDestinoVoluntario']);
 
