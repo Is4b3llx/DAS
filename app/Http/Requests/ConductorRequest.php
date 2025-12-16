@@ -22,12 +22,12 @@ class ConductorRequest extends FormRequest
     public function rules(): array
     {
         return [
-			'nombre' => 'required|string',
-			'apellido' => 'required|string',
-			'fecha_nacimiento' => 'required',
-			'ci' => 'required|string',
-			'celular' => 'required|string',
-			'id_licencia' => 'required',
+            'nombre' => 'required|string',
+            'apellido' => 'required|string',
+            'fecha_nacimiento' => ['required', 'date', 'before_or_equal:' . now()->subYears(18)->format('Y-m-d')],
+            'ci' => 'required|string',
+            'celular' => 'required|string',
+            'id_licencia' => 'required',
         ];
     }
 }

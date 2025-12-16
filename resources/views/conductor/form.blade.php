@@ -14,7 +14,7 @@
         </div>
         <div class="form-group mb-2 mb20">
             <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-            <input type="date" name="fecha_nacimiento" class="form-control @error('fecha_nacimiento') is-invalid @enderror" value="{{ old('fecha_nacimiento', $conductor?->fecha_nacimiento) }}" id="fecha_nacimiento">
+            <input type="date" name="fecha_nacimiento" class="form-control @error('fecha_nacimiento') is-invalid @enderror" value="{{ old('fecha_nacimiento', $conductor?->fecha_nacimiento) }}" id="fecha_nacimiento" max="{{ \Carbon\Carbon::now()->subYears(18)->format('Y-m-d') }}">
             {!! $errors->first('fecha_nacimiento', '<div class="invalid-feedback" role="alert"><strong>:message</strong></div>') !!}
         </div>
         <div class="form-group mb-2 mb20">
