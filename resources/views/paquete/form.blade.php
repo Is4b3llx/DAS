@@ -412,7 +412,6 @@
     }
 @endphp
 
-
 <script>
 (function() {
 
@@ -433,9 +432,11 @@
     const defaultLng  = Number("{{ $defaultLng }}");
     const defaultZoom = Number("{{ $defaultZoom }}");
 
+    const GEO_REVERSE_URL = @json(url('/geo/reverse'));
+
     const map = L.map('mapa-ubicacion-paquete', {
       zoomControl: true,
-      dragging: false, 
+      dragging: false,
       scrollWheelZoom: false,
       doubleClickZoom: false,
       boxZoom: false,
@@ -451,11 +452,11 @@
 
     let marker = null;
 
-    const latInput = document.getElementById('latitud');
-    const lngInput = document.getElementById('longitud');
+    const latInput       = document.getElementById('latitud');
+    const lngInput       = document.getElementById('longitud');
     const direccionInput = document.getElementById('zona');
     const provinciaInput = document.getElementById('provincia_actual');
-    const estadoSelect = document.getElementById('estado_id');
+    const estadoSelect   = document.getElementById('estado_id');
 
     function isArmadoSelected() {
       if (!estadoSelect) return false;
@@ -463,77 +464,98 @@
       return txt.toLowerCase() === 'armado';
     }
 
-    function setMarker(lat, lng) {
-      if (latInput && lngInput) {
-        latInput.value = lat.toFixed(6);
-        lngInput.value = lng.toFixed(6);
-      }
-
-      if (!marker) {
-        marker = L.marker([lat, lng], {
-          draggable: false
-        }).addTo(map);
-      } else {
-        marker.setLatLng([lat, lng]);
-      }
-
-      map.setView([lat, lng], 15);
-      reverseGeocode(lat, lng);
+    function setFixedAlmacen() {
+      if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
+      if (provinciaInput) provinciaInput.value = '';
     }
 
     function reverseGeocode(lat, lng) {
       if (!direccionInput && !provinciaInput) return;
 
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-        .then(r => r.json())
-        .then(data => {
-          const addr = data && data.address ? data.address : {};
+      if (isArmadoSelected()) {
+        setFixedAlmacen();
+        return;
+      }
 
-          let dir = addr.road || '';
+      const url =
+        `${GEO_REVERSE_URL}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
+
+      fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(r => {
+          if (!r.ok) throw new Error('Geo reverse HTTP ' + r.status);
+          return r.json();
+        })
+        .then(data => {
+          const addr = data?.address || {};
+
+          let dir = addr.road ?? '';
           if (addr.house_number)  dir += (dir ? ' ' : '') + addr.house_number;
           if (addr.neighbourhood) dir += (dir ? ', ' : '') + addr.neighbourhood;
           if (addr.suburb)        dir += (dir ? ', ' : '') + addr.suburb;
-          if (addr.city || addr.town) {
-            dir += (dir ? ', ' : '') + (addr.city || addr.town);
-          }
+          if (addr.city || addr.town) dir += (dir ? ', ' : '') + (addr.city || addr.town);
 
           if (direccionInput) {
-            direccionInput.value =
-              dir || (data && data.display_name) || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            direccionInput.value = dir || data.display_name || `${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
           }
 
-          const prov =
-            addr.state ||
-            addr.region ||
-            addr.county ||
-            '';
-
           if (provinciaInput) {
-            provinciaInput.value = prov;
+            provinciaInput.value =
+              addr.village ?? addr.town ?? addr.city ?? addr.municipality ?? addr.state ?? addr.region ?? addr.county ?? '';
           }
         })
         .catch(err => {
-          console.warn('Error en reverse geocoding:', err);
-          if (direccionInput) {
-            direccionInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-          }
+          console.warn('Error reverse geocoding (backend):', err);
+          if (direccionInput) direccionInput.value = `${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
+          if (provinciaInput) provinciaInput.value = '';
         });
     }
 
+    let reverseTimeout = null;
+    let lastRG = { lat: null, lng: null };
+
+    function reverseGeocodeThrottled(lat, lng) {
+      if (isArmadoSelected()) {
+        setFixedAlmacen();
+        return;
+      }
+
+      const keyLat = Number(lat).toFixed(6);
+      const keyLng = Number(lng).toFixed(6);
+      if (lastRG.lat === keyLat && lastRG.lng === keyLng) return;
+      lastRG = { lat: keyLat, lng: keyLng };
+
+      clearTimeout(reverseTimeout);
+      reverseTimeout = setTimeout(() => reverseGeocode(lat, lng), 450);
+    }
+
+    function setMarker(lat, lng, opts = { doReverse: true }) {
+      if (latInput && lngInput) {
+        latInput.value = Number(lat).toFixed(6);
+        lngInput.value = Number(lng).toFixed(6);
+      }
+
+      if (!marker) {
+        marker = L.marker([lat, lng], { draggable: false }).addTo(map);
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+
+      map.setView([lat, lng], 15);
+
+      if (opts.doReverse) reverseGeocodeThrottled(lat, lng);
+    }
+
     if (isArmadoSelected()) {
-      setMarker(FALLBACK_LAT, FALLBACK_LNG);
-      if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
-      if (provinciaInput) provinciaInput.value = '';
+      setMarker(FALLBACK_LAT, FALLBACK_LNG, { doReverse: false });
+      setFixedAlmacen();
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function(position) {
-          setMarker(position.coords.latitude, position.coords.longitude);
+          setMarker(position.coords.latitude, position.coords.longitude, { doReverse: true });
         },
         function(error) {
           console.warn("Error o permiso denegado en geolocalización:", error);
-          setMarker(FALLBACK_LAT, FALLBACK_LNG);
-
-          if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
+          setMarker(FALLBACK_LAT, FALLBACK_LNG, { doReverse: true });
 
           const geoAlert = document.getElementById("geo-alert");
           if (geoAlert) {
@@ -544,9 +566,12 @@
         { enableHighAccuracy: true, timeout: 8000 }
       );
     } else {
-      setMarker(FALLBACK_LAT, FALLBACK_LNG);
-      if (direccionInput) direccionInput.value = 'Almacen de Donaciones';
+      setMarker(FALLBACK_LAT, FALLBACK_LNG, { doReverse: true });
     }
+    map.on("click", function(e) {
+      if (isArmadoSelected()) return;
+      setMarker(e.latlng.lat, e.latlng.lng, { doReverse: true });
+    });
   }
 
   if (document.readyState === "loading") {

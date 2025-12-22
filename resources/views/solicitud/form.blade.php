@@ -411,7 +411,7 @@
         }
 
         setMarker(lat, lng);
-        reverseGeocode(lat, lng);
+        reverseGeocodeThrottled(lat, lng);
         if (mapContainer && mapContainer.scrollIntoView) {
             mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -520,15 +520,14 @@
       searchTimeout = setTimeout(buscarUbicacion, 400);
     }
 
-        function reverseGeocode(lat, lng) {
-      ubicacionInput.value = 'Cargando...';
-      provinciaInput.value = 'Cargando...';
+    function reverseGeocode(lat, lng) {
+        ubicacionInput.value = 'Cargando...';
+        provinciaInput.value = 'Cargando...';
 
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-        .then(r => r.json())
-        .then(data => {
-          if (data?.address) {
-            const a = data.address;
+        fetch(`/geo/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`)
+            .then(r => r.json())
+            .then(data => {
+            const a = data?.address || {};
 
             let dir = a.road ?? '';
             if (a.house_number)  dir += (dir ? ' ' : '') + a.house_number;
@@ -537,31 +536,25 @@
             if (a.city || a.town) dir += (dir ? ', ' : '') + (a.city || a.town);
 
             ubicacionInput.value = dir || data.display_name || `${lat}, ${lng}`;
-
             provinciaInput.value =
-              a.village ??
-              a.town ??
-              a.city ??
-              a.municipality ??
-              a.state ??
-              a.region ??
-              a.county ??
-              '';
-          } else {
+                a.village ?? a.town ?? a.city ?? a.municipality ?? a.state ?? a.region ?? a.county ?? '';
+            })
+            .catch(() => {
             ubicacionInput.value = `${lat}, ${lng}`;
             provinciaInput.value = '';
-          }
-        })
-        .catch(() => {
-          ubicacionInput.value = `${lat}, ${lng}`;
-          provinciaInput.value = '';
-        });
+            }
+        );
+    }
+    let reverseTimeout = null;
+    function reverseGeocodeThrottled(lat, lng) {
+    clearTimeout(reverseTimeout);
+    reverseTimeout = setTimeout(() => reverseGeocode(lat, lng), 450);
     }
 
     map.on('click', function(e) {
       clearSuggestions();
       setMarker(e.latlng.lat, e.latlng.lng);
-      reverseGeocode(e.latlng.lat, e.latlng.lng);
+      reverseGeocodeThrottled(e.latlng.lat, e.latlng.lng);
     });
 
         function renderHotspots(points) {
@@ -640,7 +633,7 @@
       const lng = parseFloat(lngInput.value);
       if (!isNaN(lat) && !isNaN(lng)) {
         setMarker(lat, lng);
-        reverseGeocode(lat, lng);
+        reverseGeocodeThrottled(lat, lng);
         return;
       }
     }
@@ -651,7 +644,7 @@
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           setMarker(lat, lng);
-          reverseGeocode(lat, lng);
+          reverseGeocodeThrottled(lat, lng);
         },
         function(err) {
             console.warn("Geolocalización rechazada o falló:", err);

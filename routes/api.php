@@ -21,10 +21,13 @@ use App\Http\Controllers\UserAdminController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TrazabilidadController;
+use App\Http\Controllers\GeoController;
 
 use App\Http\Controllers\Auth\RegistroSimpleController;
 //GATEWAY BUSQUEDA DE USUARIOS
 Route::get('registro/ci/{ci}', [RegistroSimpleController::class, 'showByCi']);
+//Reverse proxy para evitar cors en mapa
+Route::get('/geo/reverse', [GeoController::class, 'reverse'])->name('geo.reverse');
 
 //PUBLICOS
 Route::get('/health', function () {
