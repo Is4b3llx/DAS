@@ -432,7 +432,7 @@
     const defaultLng  = Number("{{ $defaultLng }}");
     const defaultZoom = Number("{{ $defaultZoom }}");
 
-    const GEO_REVERSE_URL = @json(url('/geo/reverse'));
+    const GEO_REVERSE_URL = @json(url('/api/geo/reverse'));
 
     const map = L.map('mapa-ubicacion-paquete', {
       zoomControl: true,

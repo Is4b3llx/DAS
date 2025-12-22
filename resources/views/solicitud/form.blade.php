@@ -524,7 +524,7 @@
         ubicacionInput.value = 'Cargando...';
         provinciaInput.value = 'Cargando...';
 
-        fetch(`/geo/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`)
+        fetch(`/api/geo/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`)
             .then(r => r.json())
             .then(data => {
             const a = data?.address || {};
