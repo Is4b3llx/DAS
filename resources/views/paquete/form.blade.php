@@ -568,10 +568,6 @@
     } else {
       setMarker(FALLBACK_LAT, FALLBACK_LNG, { doReverse: true });
     }
-    map.on("click", function(e) {
-      if (isArmadoSelected()) return;
-      setMarker(e.latlng.lat, e.latlng.lng, { doReverse: true });
-    });
   }
 
   if (document.readyState === "loading") {
